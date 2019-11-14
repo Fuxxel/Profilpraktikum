@@ -39,7 +39,7 @@ def main(args):
 	# 0    0 -inf -inf ...
 	# 0    0    0 -inf ...
 	mask = np.triu(np.full((sequence_length, sequence_length), float("-inf")), 1)
-	mask = to_tensor(mask).float()
+	mask = to_tensor(mask)
 
 	for epoch in range(args.epochs):
 		for batch_index in tqdm(batch_indices, desc="Epoch {}".format(epoch + 1)):
