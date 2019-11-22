@@ -77,9 +77,9 @@ class Test_DataLoader(tf.keras.utils.Sequence):
 		self.files = list(map(lambda x: os.path.join(self.data_folder, x), files))
 
 class CNN_DataLoader(tf.keras.utils.Sequence):
-	def __init__(self, data_folder, batch_size, sample_length=1024):
+	def __init__(self, data_folder, batch_size, sample_length=1024, skip_ahead=16):
 		self.data_folder = data_folder
-		self.skip_ahead = 1
+		self.skip_ahead = skip_ahead
 		self.batch_size = batch_size
 		self.sample_length = sample_length
 
@@ -150,9 +150,9 @@ class CNN_DataLoader(tf.keras.utils.Sequence):
 
 
 class Enc_Dec_DataLoader(tf.keras.utils.Sequence):
-	def __init__(self, data_folder, batch_size, sample_length=1024):
+	def __init__(self, data_folder, batch_size, sample_length=1024, skip_ahead=16):
 		self.data_folder = data_folder
-		self.skip_ahead = 16
+		self.skip_ahead = skip_ahead
 		self.batch_size = batch_size
 		self.sample_length = sample_length
 

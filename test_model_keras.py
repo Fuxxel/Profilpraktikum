@@ -1,5 +1,5 @@
-from models.keras.enc_dec import build_enc_dec_model, build_enc_dec_model_test
-from models.keras.cnn import build_cnn_model
+from models.keras.enc_dec import build_enc_dec_model_test
+from models.keras.cnn import build_cnn_model_test
 from dataloader import Test_DataLoader
 
 import numpy as np
@@ -11,7 +11,7 @@ def main(args):
 	model_parameters = {"latent_dim": args.latent_dim, 
 						"window_size": args.window_size,
 						"filter_num": args.filter_num}
-	model_build_fns = {"cnn": build_cnn_model,
+	model_build_fns = {"cnn": build_cnn_model_test,
 					   "enc_dec": build_enc_dec_model_test}
 	data_loader_classes = {"cnn": Test_DataLoader,
 					   	   "enc_dec": Test_DataLoader}
@@ -21,41 +21,99 @@ def main(args):
 	data_loader = data_loader_classes[args.architecture](data_folder=args.input_path, 
 														 batch_size=args.batch_size, 
 														 sample_length=args.window_size)
-	
-	complete_model, encoder_model, decoder_model = model_build_fns[args.architecture](model_parameters, args.h5_file)
 
-	for current_file_index in range(data_loader.num_files()):
-		print("\r{}/{}".format(current_file_index, data_loader.num_files(), end=""))
-		save_path = os.path.join(args.save, data_loader.current_file())
-		os.makedirs(save_path, exist_ok=True)
+	if args.architecture == "enc_dec":
+		complete_model, encoder_model, decoder_model = model_build_fns[args.architecture](model_parameters, args.h5_file)
+		for current_file_index in range(data_loader.num_files()):
+			print("\r{}/{}".format(current_file_index, data_loader.num_files(), end=""))
+			save_path = os.path.join(args.save, data_loader.current_file())
+			os.makedirs(save_path, exist_ok=True)
 
-		for current_batch_index, batch in enumerate(data_loader):
-			# Encode all inputs in batch into intial state vectors
-			state_values = encoder_model.predict(batch)
+			complete_timeseries_input = []
+			complete_timeseries_predicted = []
 
-			previous_outputs = np.full((args.batch_size, 1, 1), 0) # Initial value zero 
-			predicted_sequence = np.zeros_like(batch)
-			for current_predict_index in range(args.window_size):
-				output, h, c = decoder_model.predict([previous_outputs] + state_values)
+			for current_batch_index, batch in enumerate(data_loader):
+				# Encode all inputs in batch into intial state vectors
+				state_values = encoder_model.predict(batch)
 
-				# Model predicts backwards!
-				predicted_sequence[:, args.window_size - current_predict_index - 1] = np.squeeze(output, -1)
+				previous_outputs = np.full((args.batch_size, 1, 1), 0) # Initial value zero 
+				predicted_sequence = np.zeros_like(batch)
+				for current_predict_index in range(args.window_size):
+					output, h, c = decoder_model.predict([previous_outputs] + state_values)
 
-				previous_outputs = output
-				state_values = [h, c]
+					# Model predicts backwards!
+					predicted_sequence[:, args.window_size - current_predict_index - 1] = np.squeeze(output, -1)
 
-			for batch_index in range(predicted_sequence.shape[0]):
-				gt_sample = np.squeeze(batch[batch_index], -1)
-				predicted_sample = np.squeeze(predicted_sequence[batch_index], -1)
+					previous_outputs = output
+					state_values = [h, c]
 
-				plt.plot(gt_sample, color="blue", label="Input")
-				plt.plot(predicted_sample, color="red", label="Predicted")
+				for batch_index in range(predicted_sequence.shape[0]):
+					gt_sample = np.squeeze(batch[batch_index], -1)
+					predicted_sample = np.squeeze(predicted_sequence[batch_index], -1)
 
-				plt.savefig(os.path.join(save_path, "{:06d}_{:06d}".format(current_batch_index, batch_index)))
-				plt.clf()
+					complete_timeseries_input.append(gt_sample)
+					complete_timeseries_predicted.append(predicted_sample)
 
-		data_loader.on_epoch_end()
-	print
+					# plt.plot(gt_sample, color="blue", label="Input")
+					# plt.plot(predicted_sample, color="red", label="Predicted")
+
+					# np.save(os.path.join(save_path, "{:06d}_{:06d}_input.npy".format(current_batch_index, batch_index)), gt_sample)
+					# np.save(os.path.join(save_path, "{:06d}_{:06d}_predicted.npy".format(current_batch_index, batch_index)), predicted_sample)
+					# plt.savefig(os.path.join(save_path, "{:06d}_{:06d}.png".format(current_batch_index, batch_index)))
+					# plt.clf()
+
+			complete_timeseries_input = np.array(complete_timeseries_input)
+			complete_timeseries_predicted = np.array(complete_timeseries_predicted)
+
+			shape = complete_timeseries_input.shape
+			complete_timeseries_input = np.reshape(complete_timeseries_input, shape[0] * shape[1])
+			complete_timeseries_predicted = np.reshape(complete_timeseries_predicted, shape[0] * shape[1])
+
+			np.save(os.path.join(save_path, "complete_timeseries_input.npy"), complete_timeseries_input)
+			np.save(os.path.join(save_path, "complete_timeseries_predicted.npy"), complete_timeseries_predicted)
+
+			data_loader.on_epoch_end()
+	elif args.architecture == "cnn":
+		complete_model = model_build_fns[args.architecture](model_parameters, args.h5_file)
+		for current_file_index in range(data_loader.num_files()):
+			print("\r{}/{}".format(current_file_index, data_loader.num_files(), end=""))
+			save_path = os.path.join(args.save, data_loader.current_file())
+			os.makedirs(save_path, exist_ok=True)
+
+			complete_timeseries_input = []
+			complete_timeseries_predicted = []
+
+			for current_batch_index, batch in enumerate(data_loader):
+
+				predicted_sequence = complete_model.predict(batch)
+				
+				for batch_index in range(predicted_sequence.shape[0]):
+					gt_sample = np.squeeze(batch[batch_index], -1)
+					predicted_sample = np.squeeze(predicted_sequence[batch_index], -1)
+
+					complete_timeseries_input.append(gt_sample)
+					complete_timeseries_predicted.append(predicted_sample)
+
+					# plt.plot(gt_sample, color="blue", label="Input")
+					# plt.plot(predicted_sample, color="red", label="Predicted")
+
+					# np.save(os.path.join(save_path, "{:06d}_{:06d}_input.npy".format(current_batch_index, batch_index)), gt_sample)
+					# np.save(os.path.join(save_path, "{:06d}_{:06d}_predicted.npy".format(current_batch_index, batch_index)), predicted_sample)
+					# plt.savefig(os.path.join(save_path, "{:06d}_{:06d}.png".format(current_batch_index, batch_index)))
+					# plt.clf()
+
+			complete_timeseries_input = np.array(complete_timeseries_input)
+			complete_timeseries_predicted = np.array(complete_timeseries_predicted)
+
+			shape = complete_timeseries_input.shape
+			complete_timeseries_input = np.reshape(complete_timeseries_input, shape[0] * shape[1])
+			complete_timeseries_predicted = np.reshape(complete_timeseries_predicted, shape[0] * shape[1])
+
+			np.save(os.path.join(save_path, "complete_timeseries_input.npy"), complete_timeseries_input)
+			np.save(os.path.join(save_path, "complete_timeseries_predicted.npy"), complete_timeseries_predicted)
+
+			data_loader.on_epoch_end()
+	print()
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
