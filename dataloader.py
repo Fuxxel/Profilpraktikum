@@ -148,7 +148,6 @@ class CNN_DataLoader(tf.keras.utils.Sequence):
 		# Expand all files to full path
 		self.files = list(map(lambda x: os.path.join(self.data_folder, x), files))
 
-
 class Enc_Dec_DataLoader(tf.keras.utils.Sequence):
 	def __init__(self, data_folder, batch_size, sample_length=1024, skip_ahead=16):
 		self.data_folder = data_folder
