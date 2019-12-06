@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os 
 
-input_path = "dtw/Lager4"
-save = "dtw_lager4.png"
+input_path = "dtw/Lager5"
+save = "dtw_lager5.png"
 log = False
 cutoff_index = 323
 
