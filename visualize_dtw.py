@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os 
 
-input_path = "dtw/Lager5"
-save = "dtw_lager5.png"
+input_path = "dtw/Lager4/skip_29"
+save = "dtw_lager4_skip_29.png"
 log = False
 cutoff_index = 323
 
@@ -24,7 +24,7 @@ for file in files[:cutoff_index]:
 dtw_data = np.array(dtw_data)
 
 plt.figure(figsize=(11.27*7, 7.04), dpi=227)
-plt.title("DTW")
+plt.title("DTW (2019_02_28__12_04_16.mat)")
 if log:
 	plt.semilogy(dtw_data, label="Global error")
 else:
