@@ -14,12 +14,12 @@ def trailing_moving_average(data, window_size):
 	cumsum = np.cumsum(np.insert(data, 0, 0)) 
 	return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
 
-switch = "32"
+switch = "16"
 log = False
-apply_filter = False
+apply_filter = True
 
 apply_moving_average = True
-moving_average_window = 20
+moving_average_window = 10
 
 data_file = "global_plots/Lager5/predicted_with_correct_net/skip_29/lager5_global_error_cnn_whole_dataset_skip_29_filt_{}.npy".format(switch)
 labels_file = "global_plots/Lager5/predicted_with_correct_net/skip_29/lager5_global_error_cnn_whole_dataset_skip_29_filt_{}.ticks".format(switch)
@@ -56,7 +56,7 @@ if apply_filter:
 
 if apply_moving_average:
 	metrics = trailing_moving_average(metrics, moving_average_window)
-	labels = labels[moving_average_window:]
+	labels = labels[moving_average_window - 1:]
 
 plt.figure(figsize=(11.27*12, 7.04), dpi=227)
 # plt.plot(metrics[:,0], label="Abs error")

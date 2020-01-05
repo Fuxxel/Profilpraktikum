@@ -50,7 +50,13 @@ if apply_filter:
 	metrics = np.delete(metrics, filter_indices, 0)
 
 y = np.zeros_like(metrics)
+
+# Lager 5
+# y[int(metrics.shape[0] / 2):] = 1
+
+# Lager 4
 y[int(metrics.shape[0] / 2):] = 1
+
 y = y[moving_average_window - 1:]
 
 if apply_moving_average:

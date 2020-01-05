@@ -22,6 +22,7 @@ class Test_DataLoader(tf.keras.utils.Sequence):
 
 	def __create_batch_indices(self):
 		self.batch_indices = list(range(0, self.current_timeseries.shape[0] - self.sample_length, self.skip_ahead))
+		self.batch_size = min(len(self.batch_indices), 1024)
 
 	def num_files(self):
 		return len(self.files)
@@ -50,11 +51,12 @@ class Test_DataLoader(tf.keras.utils.Sequence):
 		self.current_timeseries = loadmat(file_to_load)["Data"][..., 0, np.newaxis] # Take zero'th timeseries
 
 	def __len__(self):
-		return math.floor(len(self.batch_indices) // self.batch_size)
+		return math.ceil(len(self.batch_indices) // self.batch_size)
 
 	def __getitem__(self, idx):
 		batch_input = []
-		for i in range(idx, idx + self.batch_size):
+		idx = idx * self.batch_size
+		for i in range(idx, min(idx + self.batch_size, len(self.batch_indices))):
 			current_index = self.batch_indices[i]
 			sample = self.current_timeseries[current_index:current_index + self.sample_length]
 			sample = self.__normalize_sample(sample)
@@ -77,11 +79,12 @@ class Test_DataLoader(tf.keras.utils.Sequence):
 		self.files = list(map(lambda x: os.path.join(self.data_folder, x), files))
 
 class CNN_DataLoader(tf.keras.utils.Sequence):
-	def __init__(self, data_folder, batch_size, sample_length=1024, skip_ahead=16):
+	def __init__(self, data_folder, batch_size, sample_length, skip_files=0):
 		self.data_folder = data_folder
-		self.skip_ahead = skip_ahead
+		self.skip_ahead = sample_length // 2
 		self.batch_size = batch_size
 		self.sample_length = sample_length
+		self.skip_files = skip_files
 
 		self.__load_filenames()
 
@@ -93,6 +96,8 @@ class CNN_DataLoader(tf.keras.utils.Sequence):
 
 	def __create_batch_indices(self):
 		self.batch_indices = list(range(0, self.current_timeseries.shape[0] - self.sample_length, self.skip_ahead))
+		self.batch_size = min(len(self.batch_indices) // 100, 1024)
+		print("Set batch size to: {}".format(self.batch_size))
 
 	def __shuffle_batch_indices(self):
 		random.shuffle(self.batch_indices)
@@ -123,12 +128,13 @@ class CNN_DataLoader(tf.keras.utils.Sequence):
 		self.current_timeseries = loadmat(file_to_load)["Data"][..., 0, np.newaxis] # Take zero'th timeseries
 
 	def __len__(self):
-		return math.floor(len(self.batch_indices) // self.batch_size)
+		return math.ceil(len(self.batch_indices) // self.batch_size)
 
 	def __getitem__(self, idx):
 		batch_input = []
 		batch_output = []
-		for i in range(idx, idx + self.batch_size):
+		idx = idx * self.batch_size
+		for i in range(idx, min(idx + self.batch_size, len(self.batch_indices))):
 			current_index = self.batch_indices[i]
 			sample = self.current_timeseries[current_index:current_index + self.sample_length]
 			sample = self.__normalize_sample(sample)
@@ -141,12 +147,13 @@ class CNN_DataLoader(tf.keras.utils.Sequence):
 	def __load_filenames(self):
 		files = os.listdir(self.data_folder)
 		files = list(filter(lambda x: x.endswith(".mat"), files))
+		files = sorted(files)
 		assert(len(files) > 0), "No .mat files found in data folder: {}".format(self.data_folder)
 
 		print("Found {} .mat files in {}".format(len(files), self.data_folder))
 
 		# Expand all files to full path
-		self.files = list(map(lambda x: os.path.join(self.data_folder, x), files))
+		self.files = list(map(lambda x: os.path.join(self.data_folder, x), files))[self.skip_files:]
 
 class Enc_Dec_DataLoader(tf.keras.utils.Sequence):
 	def __init__(self, data_folder, batch_size, sample_length=1024, skip_ahead=16):

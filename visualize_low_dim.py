@@ -4,7 +4,7 @@ import matplotlib
 from matplotlib.colors import ListedColormap
 from matplotlib import cm
 
-data = np.load("pca_transformed_latent_filt_32_lager4_downsample_5.npy")
+data = np.load("pca_transformed_latent_filt_32_lager4_downsample_folder_10_downsample_5.npy")
 
 # cm = matplotlib.cm.get_cmap()
 # colors = cm(np.linspace(0, 1, data.shape[0]))
