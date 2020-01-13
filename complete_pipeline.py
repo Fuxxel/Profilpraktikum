@@ -5,7 +5,7 @@ import argparse
 import os
 import numpy as np
 import pickle
-from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, average_precision_score
 import matplotlib.pyplot as plt
 
 def load_txt_list(path):
@@ -19,9 +19,8 @@ def trailing_moving_average(data, window_size):
 	cumsum = np.cumsum(np.insert(data, 0, 0)) 
 	return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
 
-
 def build_subpath_from_model_params(args):
-	return os.path.join(args.name, "ws{}".format(args.window_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
+	return os.path.join(args.name, "ws{}".format(args.window_size), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
 
 def train(model, data_loader, args):
 	print("##########################")
@@ -346,12 +345,28 @@ def create_data_for_plots(args):
 	plt.savefig(os.path.join(raw_save, "roc_metric.png"))
 	plt.clf()
 
+	precision, recall, thresholds = precision_recall_curve(gt_labels, roc_metrics)
+	average_precision = average_precision_score(gt_labels, roc_metrics)
+	lw = 2
+	plt.figure()
+	plt.plot(recall, precision,
+			lw=lw, label="Average Precision = {:0.2f}".format(average_precision))
+	plt.xlim([0.0, 1.0])
+	plt.xlabel('Recall')
+	plt.ylabel('Precision')
+	plt.title('Precision-Recall curve')
+	plt.legend(loc="lower left")
+	plt.tight_layout() 
+	plt.savefig(os.path.join(raw_save, "pr.png"))
+	plt.clf()
+
 
 def main(args):
 	args.filter_num = 64 // args.filter_ratio
 
 	model_parameters = {"window_size": args.window_size,
-						"filter_num": args.filter_num}
+						"filter_num": args.filter_num,
+						"filter_size": args.filter_size}
 
 	print("Loading training data")
 	training_data_loader = CNN_DataLoader(data_folder=args.training_input_path, 
@@ -405,6 +420,7 @@ if __name__ == "__main__":
 
 	## cnn specific
 	parser.add_argument("-f", "--filter_num", type=int, default=None, help="Number of filters per 1d-conv layer")
+	parser.add_argument("-fs", "--filter_size", type=int, default=3, help="Filter size of a convolution. Set to Size x Size and must be odd. Default = 3")
 	parser.add_argument("-fr", "--filter_ratio", type=int, help="Percentage of window size representing the latent space size. Example: Window Size=128, Filter ratio=2 --> 128/2=64 Latent Space Dim and 64/2=32 --> Number of 1d-conv filters.")
 
 	args = parser.parse_args()
