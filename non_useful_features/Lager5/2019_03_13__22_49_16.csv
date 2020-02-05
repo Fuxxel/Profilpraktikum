@@ -1,0 +1,2 @@
+id,x__autocorrelation__lag_1024,x__autocorrelation__lag_128,x__autocorrelation__lag_16384,x__autocorrelation__lag_2048,x__autocorrelation__lag_256,x__autocorrelation__lag_4096,x__autocorrelation__lag_512,x__autocorrelation__lag_8192
+A,0.5896590142282622,-0.722527228270299,0.5767818678779364,0.5803403190346389,0.6057108293028065,0.5793398184293657,0.605464902797067,0.5813397966211123
