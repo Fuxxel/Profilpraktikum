@@ -25,27 +25,27 @@ def process_file(file):
 	df["id"] = "A"
 
 	params = {
-		"abs_energy": None,
-        "agg_autocorrelation": [{"f_agg": s, "maxlag": 40} for s in ["mean", "median", "var"]],
-		"agg_linear_trend": [{"attr": attr, "chunk_len": i, "f_agg": f}
-                                 for attr in ["rvalue", "intercept", "slope", "stderr"]
-                                 for i in [5, 10, 50]
-                                 for f in ["max", "min", "mean", "var"]],
-		"ar_coefficient": [{"coeff": coeff, "k": k} for coeff in range(5) for k in [10]],
-		"autocorrelation": [{"lag": lag} for lag in range(10)],
-		"binned_entropy": [{"max_bins": max_bins} for max_bins in [10]],
-		"fft_aggregated": [{"aggtype": s} for s in ["centroid", "variance", "skew", "kurtosis"]],
-		"fft_coefficient": [{"coeff": k, "attr": a} for a, k in product(["real", "imag", "abs", "angle"], range(100))],
-		"kurtosis": None,
-		"mean": None,
-		"mean_abs_change": None,
-		"mean_change": None,
-		"median": None,
-		"number_peaks": [{"n": n} for n in [1, 3, 5, 10, 50]],
-		"partial_autocorrelation": [{"lag": lag} for lag in range(10)],
-		"skewness": None,
-		"standard_deviation": None,
-		"variance": None
+		# "abs_energy": None,
+        # "agg_autocorrelation": [{"f_agg": s, "maxlag": 40} for s in ["mean", "median", "var"]],
+		# "agg_linear_trend": [{"attr": attr, "chunk_len": i, "f_agg": f}
+        #                          for attr in ["rvalue", "intercept", "slope", "stderr"]
+        #                          for i in [5, 10, 50]
+        #                          for f in ["max", "min", "mean", "var"]],
+		# "ar_coefficient": [{"coeff": coeff, "k": k} for coeff in range(5) for k in [10]],
+		"autocorrelation": [{"lag": x} for x in [128, 256, 512, 1024, 2048, 4096, 8192, 16384]],
+		# "binned_entropy": [{"max_bins": max_bins} for max_bins in [10]],
+		# "fft_aggregated": [{"aggtype": s} for s in ["centroid", "variance", "skew", "kurtosis"]],
+		# "fft_coefficient": [{"coeff": k, "attr": a} for a, k in product(["real", "imag", "abs", "angle"], range(100))],
+		# "kurtosis": None,
+		# "mean": None,
+		# "mean_abs_change": None,
+		# "mean_change": None,
+		# "median": None,
+		# "number_peaks": [{"n": n} for n in [1, 3, 5, 10, 50]],
+		# "partial_autocorrelation": [{"lag": lag} for lag in range(10)],
+		# "skewness": None,
+		# "standard_deviation": None,
+		# "variance": None
 	}
 
 	features = extract_features(df, 
@@ -69,7 +69,11 @@ def main(args):
 	files = sorted(files)
 	files = list(map(lambda x: os.path.join(args.input_path, x), files))
 
-	process_file(files[args.n_file])
+	for file in files:
+		process_file(file)
+
+	# Multiprocessing:
+	# process_file(files[args.n_file])
 
 	# print(files)
 
@@ -90,7 +94,7 @@ def main(args):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument("-n", "--n_file", type=int, default=1, help="File to work on in file list.")
+	# parser.add_argument("-n", "--n_file", type=int, default=1, help="File to work on in file list.")
 	
 	parser.add_argument("-i", "--input_path", type=str, required=True, help="Path to .mat training files.")
 	parser.add_argument("-o", "--output_path", type=str, required=True, help="Path to save directory.")

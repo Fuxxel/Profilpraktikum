@@ -20,7 +20,7 @@ def trailing_moving_average(data, window_size):
 	return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
 
 def build_subpath_from_model_params(args):
-	return os.path.join(args.name, "ws{}".format(args.window_size), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
+	return os.path.join(args.name, "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
 
 def train(model, data_loader, args):
 	print("##########################")
@@ -57,7 +57,7 @@ def predict(model, data_loader, args):
 
 		complete_latent_spaces = []
 		for current_batch_index, batch in enumerate(data_loader):
-			predicted_sequence, latent_spaces = model.predict(batch)
+			predicted_sequence, latent_spaces = model.predict_on_batch(batch)
 			complete_latent_spaces.append(latent_spaces)
 			
 			for batch_index in range(predicted_sequence.shape[0]):
@@ -323,6 +323,53 @@ def create_data_for_plots(args):
 	plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
 	plt.xlim([0.0, 1.0])
 	plt.ylim([0.0, 1.05])
+	num = 0
+	colors = iter(["r*", "g*", "y*"])
+	threshold_levels = []
+	for fpos, tpos, thresh in zip(fpr, tpr, thresholds):
+		dist = np.sum((np.array([0, 1]) - np.array([fpos, tpos]))**2)
+		threshold_levels.append((dist, fpos, tpos, thresh))
+
+	threshold_levels = sorted(threshold_levels, key=lambda x: x[0])
+
+	hline_thresholds = []
+	for i in range(3):
+		_, fpos, tpos, tresh = threshold_levels[i]
+		hline_thresholds.append(tresh)
+		plt.plot(fpos, tpos, next(colors))
+
+	plt.xlabel('False Positive Rate')
+	plt.ylabel('True Positive Rate')
+	plt.title('Receiver operating characteristic')
+	plt.legend(loc="lower right")
+	plt.tight_layout() 
+	plt.savefig(os.path.join(raw_save, "roc_annotated.png"))
+	plt.clf()
+
+	plt.figure(figsize=(11.27*12, 7.04), dpi=227)
+	plt.title(args.lager)
+	plt.plot(roc_metrics)
+	plt.hlines(gt_horizontal_line_y_value, 0, roc_metrics.shape[0])
+	plt.hlines(hline_thresholds[0], 0, roc_metrics.shape[0], colors=["red"], linestyles="dashdot")
+	plt.hlines(hline_thresholds[1], 0, roc_metrics.shape[0], colors=["green"], linestyles="dashdot")
+	plt.hlines(hline_thresholds[2], 0, roc_metrics.shape[0], colors=["yellow"], linestyles="dashdot")
+	plt.xlabel("Date")
+	plt.ylabel("Global error")
+	plt.xticks(np.arange(len(roc_ticks)), roc_ticks)
+	ax = plt.gca()
+	plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+			rotation_mode="anchor")
+	plt.tight_layout() 
+	plt.savefig(os.path.join(raw_save, "roc_metric_annotated.png"))
+	plt.clf()
+
+	plt.figure()
+	lw = 2
+	plt.plot(fpr, tpr, color='darkorange',
+			lw=lw, label="ROC curve (area = {:0.2f})".format(roc_auc))
+	plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+	plt.xlim([0.0, 1.0])
+	plt.ylim([0.0, 1.05])
 	plt.xlabel('False Positive Rate')
 	plt.ylabel('True Positive Rate')
 	plt.title('Receiver operating characteristic')
@@ -366,18 +413,20 @@ def main(args):
 
 	model_parameters = {"window_size": args.window_size,
 						"filter_num": args.filter_num,
-						"filter_size": args.filter_size}
+						"filter_size": args.filter_size,
+						"num_conv": args.num_conv}
 
-	print("Loading training data")
-	training_data_loader = CNN_DataLoader(data_folder=args.training_input_path, 
-										  batch_size=args.batch_size, 
-										  sample_length=args.window_size,
-										  skip_files=args.skip_train_files)
 	print("Building model")
 	model = build_cnn_model(model_parameters)
 
 	if not args.skip_training:
 		print("Starting training")
+		print("Loading training data")
+		training_data_loader = CNN_DataLoader(data_folder=args.training_input_path, 
+										      batch_size=args.batch_size, 
+										      sample_length=args.window_size,
+										      skip_files=args.skip_train_files)
+	
 		train(model, training_data_loader, args)
 
 	print("Loading test data")
@@ -419,6 +468,7 @@ if __name__ == "__main__":
 	parser.add_argument("-sk", "--skip_train_files", type=int, default=0, help="Number of train files to skip. Default = 0")
 
 	## cnn specific
+	parser.add_argument("-nc", "--num_conv", type=int, default=1, help="Number of convolution in each downward/upward layer of the network. Default = 1")
 	parser.add_argument("-f", "--filter_num", type=int, default=None, help="Number of filters per 1d-conv layer")
 	parser.add_argument("-fs", "--filter_size", type=int, default=3, help="Filter size of a convolution. Set to Size x Size and must be odd. Default = 3")
 	parser.add_argument("-fr", "--filter_ratio", type=int, help="Percentage of window size representing the latent space size. Example: Window Size=128, Filter ratio=2 --> 128/2=64 Latent Space Dim and 64/2=32 --> Number of 1d-conv filters.")

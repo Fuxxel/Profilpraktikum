@@ -22,7 +22,8 @@ class Test_DataLoader(tf.keras.utils.Sequence):
 
 	def __create_batch_indices(self):
 		self.batch_indices = list(range(0, self.current_timeseries.shape[0] - self.sample_length, self.skip_ahead))
-		self.batch_size = min(len(self.batch_indices), 1024)
+		self.batch_size = min(len(self.batch_indices), 256)
+		print("Set batch size to: {}".format(self.batch_size))
 
 	def num_files(self):
 		return len(self.files)
