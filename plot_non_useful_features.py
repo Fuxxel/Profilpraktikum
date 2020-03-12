@@ -100,6 +100,11 @@ for i, lag in enumerate(lags):
 	
 	fpr, tpr, thresholds = roc_curve(gt_labels, roc_metrics)
 	roc_auc = roc_auc_score(gt_labels, roc_metrics)
+	if roc_auc < 0.5:
+		# Reverse the classifier
+		gt_labels = list(map(lambda x: 1 - x, gt_labels))
+		fpr, tpr, thresholds = roc_curve(gt_labels, roc_metrics)
+		roc_auc = roc_auc_score(gt_labels, roc_metrics)
 
 	plt.figure()
 	lw = 2
@@ -171,7 +176,7 @@ for i, lag in enumerate(lags):
 	plt.plot(roc_metrics)
 	plt.hlines(gt_horizontal_line_y_value, 0, roc_metrics.shape[0])
 	plt.xlabel("Date")
-	plt.ylabel("Global error")
+	plt.ylabel("Value")
 	if len(roc_ticks) > 500:
 		plt.xticks(np.arange(len(roc_ticks))[::len(roc_ticks)//500], roc_ticks[::len(roc_ticks)//500])
 	else:

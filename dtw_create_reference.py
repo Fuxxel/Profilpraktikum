@@ -24,14 +24,15 @@ reference_data = []
 for i in range(5):
 	print(files[i])
 	data = loadmat(files[i])["Data"][:, 0]
-	
-	max_index = data.shape[0] - window
-	min_index = window * 10
+	data = data[:(data.shape[0] // window) * window]
+
+	max_index = (data.shape[0] - window) // window
+	min_index = 10
 
 	sample_points = np.random.randint(min_index, max_index, 10)
 
 	for point in sample_points:
-		sample_data = normalize(data[point:point + window])
+		sample_data = normalize(data[(point*window):(point*window) + window])
 		reference_data.append(sample_data)
 
 reference_data = np.array(reference_data)

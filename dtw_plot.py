@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-dtw_path = "dtw/average/Lager4"
+dtw_path = "dtw/Lager4/old"
 
 files = os.listdir(dtw_path)
 files = filter(lambda x: x.endswith(".dtw"), files)
@@ -14,4 +14,4 @@ for file in files:
 	values.append(np.loadtxt(full_path))
 
 plt.plot(np.array(values))
-plt.savefig("dtw_average_lager4.png")
+plt.savefig("dtw_old_lager4.png")

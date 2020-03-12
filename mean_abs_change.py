@@ -19,7 +19,8 @@ def trailing_moving_average(data, window_size):
 	cumsum = np.cumsum(np.insert(data, 0, 0)) 
 	return (cumsum[window_size:] - cumsum[:-window_size]) / float(window_size)
 
-def create_metrics(data_folder, lager, title, save):
+def create_metrics(data_folder, lager, title, save, sensor=0):
+	os.makedirs(save, exist_ok=True)
 	files = os.listdir(data_folder)
 	files = list(filter(lambda x: x.endswith(".mat"), files))
 	assert(len(files) > 0), "No .mat files found in data folder: {}".format(data_folder)
@@ -39,7 +40,7 @@ def create_metrics(data_folder, lager, title, save):
 	metrics = []
 	for i, file in enumerate(files):
 		print("Processing {}/{}: {}".format(i + 1, len(files), file))
-		data = loadmat(file)["Data"][..., 0] # Take zero'th timeseries
+		data = loadmat(file)["Data"][..., sensor]
 		metrics.append(mean_abs_change(data))
 
 	assert(len(ticks) == len(metrics))
@@ -94,9 +95,9 @@ def create_metrics(data_folder, lager, title, save):
 	plt.savefig(os.path.join(save, "error_ma_10.png"))
 	plt.clf()
 
-	#########################################
-	#### Create ROC and AUC inside of ROI
-	#########################################
+	##########################################
+	#### Create ROC and AUC inside of ROI ####
+	##########################################
 	gt_list = load_txt_list(os.path.join("gt", lager + ".txt"))
 	last_sample_in_gt = gt_list[-1]
 	first_sample_in_gt = gt_list[0]
@@ -149,6 +150,20 @@ def create_metrics(data_folder, lager, title, save):
 	plt.savefig(os.path.join(save, "roc_metric.png"))
 	plt.clf()
 
+	plt.figure(figsize=(16, 9), dpi=160)
+	plt.title(title)
+	plt.plot(roc_metrics)
+	plt.xlabel("Date")
+	plt.ylabel("Mean abs. change")
+	tick_indices = (np.linspace(0, len(roc_ticks) - 1, 10)).astype(np.int)
+	plt.xticks(tick_indices, np.take(roc_ticks, tick_indices))
+	ax = plt.gca()
+	plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+			rotation_mode="anchor")
+	plt.tight_layout() 
+	plt.savefig(os.path.join(save, "roc_metric_for_presentation.png"))
+	plt.clf()
+
 	precision, recall, thresholds = precision_recall_curve(gt_labels, roc_metrics)
 	average_precision = average_precision_score(gt_labels, roc_metrics)
 	lw = 2
@@ -165,8 +180,15 @@ def create_metrics(data_folder, lager, title, save):
 	plt.clf()
 
 def main():
-	create_metrics("Data/Lager4/complete_set", "Lager4", "Lager 4 Mean Abs Change Error", "mean_abs_change/Lager4")
-	create_metrics("Data/Lager5/complete_set", "Lager5", "Lager 5 Mean Abs Change Error", "mean_abs_change/Lager5")
+	create_metrics("Data/Lager4/complete_set", "Lager4", "Lager 4", "mean_abs_change/Lager4/sensor_0", 0)
+	create_metrics("Data/Lager4/complete_set", "Lager4", "Lager 4", "mean_abs_change/Lager4/sensor_1", 1)
+	create_metrics("Data/Lager4/complete_set", "Lager4", "Lager 4", "mean_abs_change/Lager4/sensor_2", 2)
+	create_metrics("Data/Lager4/complete_set", "Lager4", "Lager 4", "mean_abs_change/Lager4/sensor_3", 3)
+
+	create_metrics("Data/Lager5/complete_set", "Lager5", "Lager 5", "mean_abs_change/Lager5/sensor_0", 0)
+	create_metrics("Data/Lager5/complete_set", "Lager5", "Lager 5", "mean_abs_change/Lager5/sensor_1", 1)
+	create_metrics("Data/Lager5/complete_set", "Lager5", "Lager 5", "mean_abs_change/Lager5/sensor_2", 2)
+	create_metrics("Data/Lager5/complete_set", "Lager5", "Lager 5", "mean_abs_change/Lager5/sensor_3", 3)
 
 if __name__ == "__main__":
 	main()
