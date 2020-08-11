@@ -3,7 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib
 
-stats = pickle.load(open("classify_continue_training_stats.p", "rb"))
+stats = pickle.load(open("classify_continue_training_on_5_stats.p", "rb"))
 
 loss_bearing_5 = stats["loss_bearing_5"]
 acc_bearing_5 = stats["acc_bearing_5"]

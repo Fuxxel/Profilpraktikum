@@ -34,7 +34,7 @@ def std_all_values(a):
     return np.asarray(result)
 
 
-plot_data = np.load("classify_train_on_both_plot_data_on_bearing_4.npy")
+plot_data = np.load("classify_continue_plot_data_on_bearing_5_test_4.npy")
 matplotlib.rcParams.update({'font.size': 14})
 plt.figure(figsize=(16, 9), dpi=200)
 
@@ -54,7 +54,7 @@ for days, times in [x.split("__") for x in ticks]:
 plt.xticks(np.arange(len(plot_data))[::6], result_ticks, rotation=25, ha="right")
 plt.vlines(gt_begin_index, 0, 1, colors="black")
 plt.hlines(y=0.5, linestyles="dashed", xmin=0, xmax=len(plot_data))
-plt.title("Classification Bearing 4 (Trained on Bearing 4 and 5)")
+plt.title("Classification Bearing 4 (Training continued on Bearing 5)")
 plt.xlabel("Date")
 plt.ylabel("Probability")
 plt.tight_layout()

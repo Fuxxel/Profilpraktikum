@@ -30,7 +30,7 @@ for i, (data_file, category) in enumerate(test_data):
 def windowed_data(a, stepsize, width):
 	return np.vstack([a[i - width:i] for i in range(width, a.shape[0] + 1, stepsize)])
 
-plot_data = np.load("classify_train_on_both_plot_data_on_bearing_5.npy")
+plot_data = np.load("classify_continue_plot_data_on_bearing_5_test_5.npy")
 matplotlib.rcParams.update({'font.size': 14})
 plt.figure(figsize=(16, 9), dpi=200)
 
@@ -52,7 +52,7 @@ for days, times in [x.split("__") for x in ticks]:
 plt.xticks(np.arange(len(plot_data))[::12], result_ticks, rotation=25, ha="right")
 plt.vlines(gt_begin_index, 0, 1, colors="black")
 plt.hlines(y=0.5, linestyles="dashed", xmin=0, xmax=len(plot_data))
-plt.title("Classification Bearing 5 (Trained on Bearing 4 and 5)")
+plt.title("Classification Bearing 5 (Training continued on Bearing 5)")
 plt.xlabel("Date")
 plt.ylabel("Probability")
 plt.tight_layout()
