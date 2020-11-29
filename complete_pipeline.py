@@ -22,8 +22,8 @@ def trailing_moving_average(data, window_size):
 
 def build_subpath_from_model_params(args):
 	# return os.path.join(args.name, "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
-	# return os.path.join(args.name, "reduced_model" if args.use_reduced_model else "full_model", "sensor_{}".format(args.sensor), "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
-	return os.path.join(args.name, args.architecture, "reduced_model" if args.use_reduced_model else "full_model", "normalize_then_split" if args.normalize_then_split else "", "sensor_{}".format(args.sensor), "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
+	return os.path.join(args.name, "reduced_model" if args.use_reduced_model else "full_model", "sensor_{}".format(args.sensor), "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
+	# return os.path.join(args.name, args.architecture, "reduced_model" if args.use_reduced_model else "full_model", "normalize_then_split" if args.normalize_then_split else "", "sensor_{}".format(args.sensor), "ws{}".format(args.window_size), "nc{}".format(args.num_conv), "fs{}".format(args.filter_size), "skip_first_{}".format(args.skip_train_files), "lat_{}".format(args.filter_ratio))
 
 def write_train_status_file(status, save_path):
 	with open(save_path, "w") as out:
@@ -57,7 +57,7 @@ def train(model, data_loader, args):
 	if os.path.exists(status_path):
 		status = read_train_status_file(status_path)
 
-	start_at_epoch = status["last_epoch"]
+	start_at_epoch = int(status["last_epoch"])
 
 	if start_at_epoch > 0: # Advance the dataloader to desired starting epoch
 		for _ in range(start_at_epoch // args.epochs_per_file):
@@ -139,11 +139,11 @@ def predict(model, data_loader, args):
 		else:
 			for current_batch_index, batch in enumerate(data_loader):
 				# Encode all inputs in batch into intial state vectors
-				state_values = encoder_model.predict_on_batch(batch)
-
+				state_values = encoder_model.predict(batch)
+				
 				complete_latent_spaces.append(state_values[0])
 
-				previous_outputs = np.full((args.batch_size, 1, 1), -1) # Initial value minus one 
+				previous_outputs = np.full((batch.shape[0], 1, 1), -1) # Initial value minus one 
 				predicted_sequence = np.zeros_like(batch)
 				for current_predict_index in range(args.window_size):
 					output, h, c = decoder_model.predict([previous_outputs] + state_values)
@@ -540,7 +540,7 @@ def create_data_for_plots(args):
 
 	old_font_size = plt.rcParams.get("font.size")
 	plt.rcParams.update({'font.size': 22})
-	plt.figure(figsize=(16, 9), dpi=80)
+	plt.figure(figsize=(16, 9), dpi=160)
 	plt.title(args.lager)
 	plt.plot(roc_metrics)
 	plt.xlabel("Date")
@@ -552,6 +552,27 @@ def create_data_for_plots(args):
 			rotation_mode="anchor")
 	plt.tight_layout() 
 	plt.savefig(os.path.join(raw_save, "roc_metric_for_presentation.png"))
+	plt.clf()
+	plt.rcParams.update({'font.size': old_font_size})
+
+	old_font_size = plt.rcParams.get("font.size")
+	plt.rcParams.update({'font.size': 22})
+	plt.figure(figsize=(16, 9), dpi=160)
+	plt.title(args.lager)
+	plt.plot(roc_metrics)
+	plt.hlines(gt_horizontal_line_y_value, 0, roc_metrics.shape[0])
+	plt.hlines(hline_thresholds[0], 0, roc_metrics.shape[0], colors=["red"], linestyles="dashdot")
+	plt.hlines(hline_thresholds[1], 0, roc_metrics.shape[0], colors=["green"], linestyles="dashdot")
+	plt.hlines(hline_thresholds[2], 0, roc_metrics.shape[0], colors=["yellow"], linestyles="dashdot")
+	plt.xlabel("Date")
+	plt.ylabel("Error")
+	tick_indices = (np.linspace(0, len(roc_ticks) - 1, 10)).astype(np.int)
+	plt.xticks(tick_indices, np.take(roc_ticks, tick_indices))
+	ax = plt.gca()
+	plt.setp(ax.get_xticklabels(), rotation=25, ha="right",
+			rotation_mode="anchor")
+	plt.tight_layout() 
+	plt.savefig(os.path.join(raw_save, "roc_metric_for_presentation_annotated.png"))
 	plt.clf()
 	plt.rcParams.update({'font.size': old_font_size})
 
@@ -578,7 +599,6 @@ def main(args):
 		model_save_path = os.path.join(args.save_model, build_subpath_from_model_params(args), "cnn_model.h5" if args.architecture == "CNN" else "lstm_model.h5")
 		if os.path.exists(model_save_path):
 			model.load_weights(model_save_path)
-
 
 	enc_model = None
 	dec_model = None
@@ -632,11 +652,7 @@ def main(args):
 					model_save_path = os.path.join(args.save_model, build_subpath_from_model_params(args), "cnn_model.h5" if args.architecture == "CNN" else "lstm_model.h5")
 					model = build_enc_dec_model_test(model_parameters, model_save_path)
 
-		if args.architecture == "LSTM":
-			model, enc_model, dec_model = build_enc_dec_model_test(model_parameters, os.path.join(args.save_model, build_subpath_from_model_params(args), "cnn_model.h5" if args.architecture == "CNN" else "lstm_model.h5"))
-			predict((model, enc_model, dec_model), predict_data_loader, args)
-		else:
-			predict(model, predict_data_loader, args)
+		predict(model, predict_data_loader, args)
 
 	print("Creating plots")
 	create_data_for_plots(args)
